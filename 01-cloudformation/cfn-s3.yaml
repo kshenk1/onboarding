@@ -7,6 +7,5 @@ Resources:
     Type: AWS::S3::Bucket
     Description: Basic AWS S3 Bucket Configuration
     Properties:
-      BucketName:
-        Ref: BucketNameParameter
+      BucketName: !Sub '${AWS::AccountId}-${BucketNameParameter}'
 
