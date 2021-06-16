@@ -1,0 +1,5 @@
+Resources:
+  kyleshenklabsstelligent:
+    Type: AWS::S3::Bucket
+    Description: Basic AWS S3 Bucket Configuration
+
