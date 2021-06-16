@@ -1,5 +1,12 @@
+Parameters:
+  BucketNameParameter:
+    Type: String
+
 Resources:
   kyleshenklabsstelligent:
     Type: AWS::S3::Bucket
     Description: Basic AWS S3 Bucket Configuration
+    Properties:
+      BucketName:
+        Ref: BucketNameParameter
 
