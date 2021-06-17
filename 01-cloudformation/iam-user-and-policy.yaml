@@ -27,3 +27,10 @@ Resources:
             Resource: 'arn:aws:s3:::*/*'
       Users: 
         - !Ref IAMUserName
+
+Outputs:
+  ManagedPolicyARN:
+    Description: The managed policy ARN returned from ksSandboxMp
+    Value: !Ref ksSandboxMp
+    Export:
+      Name: Arn
