@@ -3,10 +3,6 @@ Parameters:
     Type: String
 
 Resources:
-  ksSandboxUser:
-    Type: AWS::IAM::User
-    Properties: 
-      UserName: !Ref IAMUserName
   ksSandboxMp:
     Type: AWS::IAM::ManagedPolicy
     Properties: 
@@ -25,12 +21,16 @@ Resources:
               - s3:ListBucketVersions
               - s3:ListMultipartUploadParts
             Resource: 'arn:aws:s3:::*/*'
-      Users: 
-        - !Ref IAMUserName
+  ksSandboxUser:
+    Type: AWS::IAM::User
+    Properties: 
+      UserName: !Ref IAMUserName
+      ManagedPolicyArns:
+        - !Ref ksSandboxMp  
 
 Outputs:
   ManagedPolicyARN:
     Description: The managed policy ARN returned from ksSandboxMp
     Value: !Ref ksSandboxMp
     Export:
-      Name: Arn
+      Name: ManagedPolicyArn
