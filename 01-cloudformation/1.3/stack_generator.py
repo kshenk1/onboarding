@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 ###############################################################################
 ## Assumes we can automagically pick up configuration/credentials from your 
-## environment: ~/.aws/credentials, ~/.boto, /etc/boto.cfg... etc
+## environment: ~/.aws/credentials currently works, 
+## ~/.boto, /etc/boto.cfg etc would just be a matter of bind mounting the 
+## right directories
 ###############################################################################
 ##
 ## How to run me:
@@ -9,8 +11,6 @@
 ## docker run --rm -it -v $(pwd):/opt/cfn -v ~/.aws:/root/.aws --entrypoint python sandbox-devel:1.0 /opt/cfn/stack_generator.py
 ##
 ## Docker Image: sandbox-devel:1.0 - is pretty much this: https://github.com/ksgh/sandbox
-##
-## 
 ##
 
 import boto3
@@ -154,7 +154,13 @@ def check_s3_for_buckets(bucket_name, regions):
             print(f' --> ERROR: {msg}')
         except ClientError as e:
             e_code = e.response['Error']['Code']
-            print(f' --> Bucket {bucket_name} not found in {r}')
+            if e_code == 404:
+                print(f' --> Bucket {bucket_name} not found in {r}')
+            elif e_code == 403:
+                print(f' --> WARNING: We may not have permissions for {bucket_name} in {r}')
+            else:
+                print(' --> UNKNOWN REPONSE: {e}'.format(e=e.response['Error']['Message']))
+
     return found_buckets
 
 def parse_args():
@@ -193,6 +199,7 @@ def main():
             timeout = 300 # 5 minutes
             expiration = time.time() + timeout
 
+            ## guess we're polling 🤷‍♂️ 
             while len(errors) > 0:
                 if time.time() > expiration:
                     print(' --> Timed out waiting for buckets to drop!')
