@@ -41,7 +41,8 @@ Resources:
     Type: AWS::EC2::Instance
     DependsOn: EC2InstanceTpl
     Properties:
-      ImageId: ami-0423918727383d809
+      #ImageId: ami-0423918727383d809
+      ImageId: ami-01e35fd528ce4705f
       LaunchTemplate: 
         LaunchTemplateName: EC2InstanceTpl
         Version: !GetAtt EC2InstanceTpl.LatestVersionNumber   

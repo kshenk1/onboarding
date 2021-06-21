@@ -26,5 +26,7 @@ aws ec2 describe-instances --filters \
     Name=tag:Name,Values=ubuntu-01,msws-01 \
     Name=instance-state-name,Values=running,pending | yq eval -P
 
+aws cloudformation describe-stack-events --stack-name $STACK_NAME
+
 echo "How'd you get here?"
 exit 127
