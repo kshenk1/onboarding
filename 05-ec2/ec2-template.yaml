@@ -31,6 +31,10 @@ Resources:
           CidrIp: 0.0.0.0/0
           FromPort: -1
           ToPort: -1
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          FromPort: 22
+          ToPort: 22
 
   EC2InstanceTpl:
     Type: AWS::EC2::LaunchTemplate
