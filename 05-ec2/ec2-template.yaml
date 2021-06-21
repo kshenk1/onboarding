@@ -5,11 +5,33 @@ Parameters:
   UbuntuNameParam:
     Type: String
     Default: ubuntu-01
-  WindowsNameParam:
+    Description: Name of the instance
+  VpcId:
     Type: String
-    Default: msws-01
+    Default: vpc-0f974fd8c0e1d5603
+    Description: VPC Id Of the VPC we're in
+  SubnetId:
+    Type: String
+    Default: subnet-00a6bf0402a393964
+    Description: subnet to throw on the netiface
+
+Outputs:
+  UbuntuPubIPV4:
+    Description: IPv4 address of the Ubuntu Instance
+    Value: !Ref UbuntuEIP
 
 Resources:
+  BasicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: BasicSecurityGroup
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: icmp
+          CidrIp: 0.0.0.0/0
+          FromPort: -1
+          ToPort: -1
+
   EC2InstanceTpl:
     Type: AWS::EC2::LaunchTemplate
     Properties:
@@ -20,10 +42,8 @@ Resources:
         InstanceInitiatedShutdownBehavior: stop
         InstanceType: t2.micro
         KeyName: ks-aws
-        NetworkInterfaces:
-          - SubnetId: subnet-00a6bf0402a393964
-            DeviceIndex: 0
-            AssociatePublicIpAddress: True
+        SecurityGroupIds:
+          - !GetAtt BasicSecurityGroup.GroupId
 
   UbuntuEC2Instance:
     Type: AWS::EC2::Instance
@@ -33,20 +53,13 @@ Resources:
       LaunchTemplate: 
         LaunchTemplateName: EC2InstanceTpl
         Version: !GetAtt EC2InstanceTpl.LatestVersionNumber
+      SubnetId: !Ref SubnetId
       Tags:
         - Key: Name
           Value: !Ref UbuntuNameParam
-    
-  WindowsEC2Instance:
-    Type: AWS::EC2::Instance
-    DependsOn: EC2InstanceTpl
-    Properties:
-      #ImageId: ami-0423918727383d809
-      ImageId: ami-01e35fd528ce4705f
-      LaunchTemplate: 
-        LaunchTemplateName: EC2InstanceTpl
-        Version: !GetAtt EC2InstanceTpl.LatestVersionNumber   
-      Tags:
-        - Key: Name
-          Value: !Ref WindowsNameParam
 
+  UbuntuEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: UbuntuEC2Instance
+    Properties:
+      InstanceId: !Ref UbuntuEC2Instance
