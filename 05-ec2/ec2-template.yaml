@@ -1,0 +1,51 @@
+Description: >
+  05-ec2 - kyle.shenk.labs
+
+Parameters:
+  UbuntuNameParam:
+    Type: String
+    Default: ubuntu-01
+  WindowsNameParam:
+    Type: String
+    Default: msws-01
+
+Resources:
+  EC2InstanceTpl:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: EC2InstanceTpl
+      LaunchTemplateData:
+        DisableApiTermination: False
+        EbsOptimized: False
+        InstanceInitiatedShutdownBehavior: stop
+        InstanceType: t2.micro
+        KeyName: ks-aws
+        NetworkInterfaces:
+          - SubnetId: subnet-00a6bf0402a393964
+            DeviceIndex: 0
+            AssociatePublicIpAddress: True
+
+  UbuntuEC2Instance:
+    Type: AWS::EC2::Instance
+    DependsOn: EC2InstanceTpl
+    Properties:
+      ImageId: ami-05dfb019c35511c71
+      LaunchTemplate: 
+        LaunchTemplateName: EC2InstanceTpl
+        Version: !GetAtt EC2InstanceTpl.LatestVersionNumber
+      Tags:
+        - Key: Name
+          Value: !Ref UbuntuNameParam
+    
+  WindowsEC2Instance:
+    Type: AWS::EC2::Instance
+    DependsOn: EC2InstanceTpl
+    Properties:
+      ImageId: ami-0423918727383d809
+      LaunchTemplate: 
+        LaunchTemplateName: EC2InstanceTpl
+        Version: !GetAtt EC2InstanceTpl.LatestVersionNumber   
+      Tags:
+        - Key: Name
+          Value: !Ref WindowsNameParam
+
