@@ -18,10 +18,19 @@ Parameters:
     Type: String
     Default: t2.micro
     Description: Instance size to use
-  SSMKey :
+  SSMKey:
+    # aws ssm put-parameter --name cwconfig --type String --value file:///aws/amazon-cloudwatch-agent.json
     Description: Name of parameter store which contains the json configuration of CWAgent.
-    Type : String
+    Type: String
     Default: cwconfig
+  CWLogGroupName:
+    Description: Name of the log group for cloudwatch
+    Type: String
+    Default: amazon-cloudwatch-agent.log
+  CWLogStreamName:
+    Description: Name of the log stream for the log group for cloudwatch
+    Type: String
+    Default: amazon-cloudwatch-agent.log
 
 Outputs:
   UbuntuPubIPV4:
@@ -53,17 +62,21 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          Effect: Allow
-          Action:
-            - "ssm:PutParameter"
-            - "ssm:DeleteParameter"
-            - "ssm:GetParameterHistory"
-            - "ssm:GetParametersByPath"
-            - "ssm:GetParameters"
-            - "ssm:GetParameter"
-            - "ssm:DeleteParameters"
-            - "ssm:DescribeParameters"
-          Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+          - Effect: Allow
+            Action:
+              - "ssm:PutParameter"
+              - "ssm:DeleteParameter"
+              - "ssm:GetParameterHistory"
+              - "ssm:GetParametersByPath"
+              - "ssm:GetParameters"
+              - "ssm:GetParameter"
+              - "ssm:DeleteParameters"
+              - "ssm:DescribeParameters"
+            Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+          - Effect: Allow
+            Action:
+              - "logs:PutLogEvents"
+            Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CWLogGroupName}:log-stream:${CWLogStreamName}'
 
   CWInstanceProfile02:
     Type: AWS::IAM::InstanceProfile
@@ -86,6 +99,17 @@ Resources:
           CidrIp: 0.0.0.0/0
           FromPort: 22
           ToPort: 22
+  
+  CWLogGroup02:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref CWLogGroupName
+  
+  CWLogStream02:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogStreamName: !Ref CWLogStreamName
+      LogGroupName: !Ref CWLogGroup02
 
   EC2InstanceTpl02:
     Type: AWS::EC2::LaunchTemplate
@@ -106,6 +130,8 @@ Resources:
     Type: AWS::EC2::Instance
     DependsOn: EC2InstanceTpl02
     Metadata:
+      ## CloudFormation::Init section was 'borrowed' directly from AWS
+      ## curl -O https://raw.githubusercontent.com/awslabs/aws-cloudformation-templates/master/aws/solutions/AmazonCloudWatchAgent/ssm/amazon_linux.template
       AWS::CloudFormation::Init:
         configSets:
           default:
