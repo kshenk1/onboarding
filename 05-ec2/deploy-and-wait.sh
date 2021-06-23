@@ -28,5 +28,4 @@ aws ec2 describe-instances --filters \
 
 aws cloudformation describe-stack-events --stack-name $STACK_NAME
 
-echo "How'd you get here?"
-exit 127
+exit 0
