@@ -31,6 +31,10 @@ Parameters:
     Description: Name of the log stream for the log group for cloudwatch
     Type: String
     Default: amazon-cloudwatch-agent.log
+  CWDownloadURL:
+    Description: Full URL of the cloudwatch package to download
+    Type: String
+    Default: https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
 
 Outputs:
   UbuntuPubIPV4:
@@ -134,7 +138,7 @@ Resources:
       ## curl -O https://raw.githubusercontent.com/awslabs/aws-cloudformation-templates/master/aws/solutions/AmazonCloudWatchAgent/ssm/amazon_linux.template
       AWS::CloudFormation::Init:
         configSets:
-          default:
+          kscfnbootcamp:
             - 01_setupCfnHup
             - 02_config-amazon-cloudwatch-agent
             - 03_restart_amazon-cloudwatch-agent
@@ -155,6 +159,7 @@ Resources:
               command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
             02_start_service:
               command:
+                ## fwiw, I get this syntax, but this seems more convoluted than just !Sub 'stuff-and-options ssm:${SSMKey}'
                 Fn::Sub:
                   - |
                     /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${ssmkey} -s
@@ -193,12 +198,18 @@ Resources:
                   [Install]
                   WantedBy=multi-user.target
           commands:
-            01enable_cfn_hup:
-              command: !Sub |
-                systemctl enable cfn-hup.service
-            02start_cfn_hup:
-              command: !Sub |
-                systemctl start cfn-hup.service
+            00_cw_dl:
+              command: !Sub 'wget ${CWDownloadURL}'
+              cwd: "~"
+            01_cw_install:
+              command: sudo dpkg -i -E ./amazon-cloudwatch-agent.deb
+              cwd: "~"
+            02_cw_get_config:
+              command: !Sub '/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${SSMKey} -s'
+            03_enable_cfn_hup:
+              command: systemctl enable cfn-hup.service
+            04_start_cfn_hup:
+              command: systemctl start cfn-hup.service
     Properties:
       ImageId: ami-05dfb019c35511c71
       LaunchTemplate: 
@@ -213,10 +224,7 @@ Resources:
           Fn::Sub:
             - |
                #!/bin/bash
-               wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
-               sudo dpkg -i -E ./amazon-cloudwatch-agent.deb
-               /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${ssmkey} -s
-               /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets default
+               /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets kscfnbootcamp
                /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
             - { ssmkey: !Ref SSMKey }
 
